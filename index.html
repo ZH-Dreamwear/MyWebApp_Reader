@@ -161,6 +161,10 @@
 				background: #d2c9b3 !important;
 			}
 
+			.bk-container-color4 {
+				background: #0f1410 !important;
+			}
+
 			.top-nav-pannel .bk-container-current {
 				position: absolute;
 				height: 28px;
@@ -473,7 +477,7 @@
 		</div>
 		<div class="container" id="root">
 			<div id="fiction_chapter_title"></div>
-			<div class="m-artical-action">
+			<div class="m-artical-action"><!--中间部分的遮罩层，用于响应事件-->
 				<div class="artical-action-mid" id="action_mid"></div>
 			</div>
 			<div id="fiction_container" class="m-read-content">
@@ -487,7 +491,7 @@
 				<p>等我哈维发放蒛阿法骨个我hi哈凤凰网哈哈我服刚发古瓦富贵勿发噶我无法安慰法规挖废物狗服务噶法安慰辜负我干分哇福娃各个额沟通而且 去千万富翁我发发啊发爱妃我发个个个 </p>
 				<p>等我哈维发放蒛阿法骨个我hi哈凤凰网哈哈我服刚发古瓦富贵勿发噶我无法安慰法规挖废物狗服务噶法安慰辜负我干分哇福娃各个额沟通而且 去千万富翁我发发啊发爱妃我发个个个 </p>
 			</div>
-			<div class="top-nav" id="top-nav" ><!--顶部导航部分开始，用于返回书架-->
+			<div class="top-nav" id="top-nav" style="display: none"><!--顶部导航部分开始，用于返回书架-->
 				<div class="top-nav-warp">
 					<div class="icon-back"></div>
 					<div class="nav-title" id="nav_title">
@@ -495,8 +499,8 @@
 					</div>
 				</div>
 			</div><!--顶部导航部分结束-->
-			<div class="top-nav-pannel-bk font-container" id="font-container" ></div><!--背景与字体部分区域的黑色背景-->
-			<div class="top-nav-pannel font-container" id="font-container"><!--背景与字体部分开始-->
+			<div class="top-nav-pannel-bk font-container" id="font-container" style="display: none"></div><!--背景与字体部分区域的黑色背景-->
+			<div class="top-nav-pannel font-container" id="font-container" style="display: none"><!--背景与字体部分开始-->
 				<div class="child-mod">
 					<span>字号</span>
 					<button id="large-font" class="spe-button">
@@ -508,16 +512,19 @@
 				</div>
 				<div class="child-mod" id="bk-container">
 					<span>背景</span>
-					<div class="bk-container"><!--背景色里面的实心-->
+					<div id="bg-icon" class="bk-container"><!--背景色里面的实心-->
 						<div class="bk-container-current"></div><!--背景色的外层的圆形边框-->
 					</div>
-					<div class="bk-container bk-container-color1"><!--背景色里面的实心#93cfe6-->
+					<div id="bg-icon1" class="bk-container bk-container-color1"><!--背景色里面的实心#93cfe6-->
 						<div class="bk-container-current"></div><!--背景色的外层的圆形边框-->
 					</div>
-					<div class="bk-container bk-container-color2"><!--背景色里面的实心#b2cc76-->
+					<div id="bg-icon2" class="bk-container bk-container-color2"><!--背景色里面的实心#b2cc76-->
 						<div class="bk-container-current"></div><!--背景色的外层的圆形边框-->
 					</div>
-					<div class="bk-container bk-container-color3"><!--背景色里面的实心#b2cc76-->
+					<div id="bg-icon3" class="bk-container bk-container-color3"><!--背景色里面的实心#b2cc76-->
+						<div class="bk-container-current"></div><!--背景色的外层的圆形边框-->
+					</div>
+					<div id="bg-icon4" class="bk-container bk-container-color4"><!--背景色里面的实心#b2cc76-->
 						<div class="bk-container-current"></div><!--背景色的外层的圆形边框-->
 					</div>
 				</div>
@@ -533,9 +540,9 @@
 				</ul>
 			</div>
 
-			<div class="bottom-nav-bk bottom_nav" ></div>
+			<div class="bottom-nav-bk bottom_nav" style="display: none"></div><!--底部导航黑色背景层-->
 
-			<div class="bottom-nav bottom_nav" ><!--底部导航开始-->
+			<div class="bottom-nav bottom_nav" style="display: none"><!--底部导航开始-->
 				<div class="item menu-button" id="menu_button">
 					<div class="item-warp">
 						<div class="icon-menu"></div>
@@ -589,6 +596,7 @@
 		<script>
 			(function(){
 				var Util = (function(){
+					var prefix = 'ficition_reader_';
 					var StorageGetter = function(key){
 						return localStorage.getItem(prefix + key);
 					}
@@ -601,9 +609,167 @@
 					}
 				})();
 
+				var Dom = {
+					top_nav:$('#top-nav'),
+					bottom_nav:$('.bottom_nav'),
+					font_container:$('.font-container'),
+					font_button:$('#font-button'),
+					body:$('body')
+				}
+
+				var Win = $(window);
+				var Doc = $(document);
+				var RootContainer = $('#fiction_container');
+				var Night = Util.StorageGetter('Night');
+				console.log(Night);
+				var initBackGround = Util.StorageGetter('background');
+				var initFontSize = Util.StorageGetter('font-size');
+				//取到的值是个字符串，所以要转换为整数
+				initFontSize = parseInt(initFontSize);
+				if(!initFontSize){
+					initFontSize = 14;
+				}
+				RootContainer.css('font-size',initFontSize);
+
+				/*如果取不到初始背景颜色，则设置背景初始颜色*/
+				if(!initBackGround){
+					initBackGround = "#d2c9b3";
+				}
+				Dom.body.css('background',initBackGround);
+
+				/*判断取到的NIght值是否为真,用来设置模式*/
+				if(Night){
+					$('#day_icon').show();
+					$('#night_icon').hide();
+				}else {
+					$('#day_icon').hide();
+					$('#night_icon').show();
+				}
+				
+
+				function main(){
+					//整个项目的入口函数
+					EventHanlder();
+				}
+
 				function ReaderModel(){
 					//实现和阅读器相关的数据
 				}
+
+				function ReaderBaseFrame(){
+					//渲染基本的UI结构
+				}
+
+				function EventHanlder(){
+					//交互的事件绑定
+					$('#action_mid').click(function(){
+						//用户点击屏幕中间部分会隐藏/显示 上下导航栏
+						if(Dom.top_nav.css('display') == 'none'){
+							Dom.bottom_nav.show();
+							Dom.top_nav.show();
+						}else {
+							Dom.bottom_nav.hide();
+							Dom.top_nav.hide();
+							Dom.font_container.hide();
+							Dom.font_button.removeClass('current');
+						}
+					});
+
+					Dom.font_button.click(function(){
+						if(Dom.font_container.css('display') == 'none'){
+							Dom.font_container.show();
+							Dom.font_button.addClass('current');
+						}else {
+							Dom.font_container.hide();
+							Dom.font_button.removeClass('current');
+						}
+					});
+
+					$('#night-button').click(function(){
+						//触发背景切换的事件(白天、黑夜模式)
+						if(!Night){
+							$('#night_icon').hide();
+							$('#day_icon').show();
+							Dom.body.css('background','#0f1410');
+							initBackGround = '#0f1410';
+							Util.StorageSetter('background',initBackGround);
+							Night = true;
+							Util.StorageSetter('Night',Night);
+						
+						}else {
+							$('#night_icon').show();
+							$('#day_icon').hide();
+							Dom.body.css('background','#fff');
+							initBackGround = '#fff';
+							Util.StorageSetter('background',initBackGround);
+							Night = false;
+							Util.StorageSetter('Night',Night);
+						}
+					});
+
+					/*字体设置部分*/
+					$('#large-font').click(function(){
+						//字体放大
+						if(initFontSize>20){
+							//可增加一些提示，告诉用户字体已最大
+							return;
+						}
+						initFontSize++;
+						RootContainer.css('font-size',initFontSize);
+						Util.StorageSetter('font-size',initFontSize);
+					});
+
+					$('#small-font').click(function(){
+						//字体缩小
+						if(initFontSize<12){
+							//可增加一些提示，告诉用户字体已最小
+							return;
+						}
+						initFontSize--;
+						RootContainer.css('font-size',initFontSize);
+						Util.StorageSetter('font-size',initFontSize);
+					});
+
+					/*背景颜色设置部分*/
+					$('#bg-icon').click(function(){
+						Dom.body.css('background','#fff');
+						initBackGround = '#fff';
+						Util.StorageSetter('background',initBackGround);
+					})
+					$('#bg-icon1').click(function(){
+						Dom.body.css('background','#93cfe6');
+						initBackGround = '#93cfe6';
+						Util.StorageSetter('background',initBackGround);
+					})
+					$('#bg-icon2').click(function(){
+						Dom.body.css('background','#b2cc76');
+						initBackGround = '#b2cc76';
+						Util.StorageSetter('background',initBackGround);
+					})
+					$('#bg-icon3').click(function(){
+						Dom.body.css('background','#d2c9b3');
+						initBackGround = '#d2c9b3';
+						Util.StorageSetter('background',initBackGround);
+					})
+					$('#bg-icon4').click(function(){
+						Dom.body.css('background','#0f1410');
+						initBackGround = '#0f1410';
+						Util.StorageSetter('background',initBackGround);
+					})
+
+					Win.scroll(function(){
+						//用户滚动屏幕时隐藏上下导航栏
+						Dom.bottom_nav.hide();
+						Dom.top_nav.hide();
+						Dom.font_container.hide();
+						Dom.font_button.removeClass('current');
+					});
+				}
+
+
+				main();
+
+
 			})();
 		</script>
 	</body>
