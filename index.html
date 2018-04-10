@@ -480,17 +480,7 @@
 			<div class="m-artical-action"><!--中间部分的遮罩层，用于响应事件-->
 				<div class="artical-action-mid" id="action_mid"></div>
 			</div>
-			<div id="fiction_container" class="m-read-content">
-				<h4>我是标题</h4>
-				<p>等我哈维发放蒛阿法骨个我hi哈凤凰网哈哈我服刚发古瓦富贵勿发噶我无法安慰法规挖废物狗服务噶法安慰辜负我干分哇福娃各个额沟通而且 去千万富翁我发发啊发爱妃我发个个个 </p>
-				<p>等我哈维发放蒛阿法骨个我hi哈凤凰网哈哈我服刚发古瓦富贵勿发噶我无法安慰法规挖废物狗服务噶法安慰辜负我干分哇福娃各个额沟通而且 去千万富翁我发发啊发爱妃我发个个个 </p>
-				<p>等我哈维发放蒛阿法骨个我hi哈凤凰网哈哈我服刚发古瓦富贵勿发噶我无法安慰法规挖废物狗服务噶法安慰辜负我干分哇福娃各个额沟通而且 去千万富翁我发发啊发爱妃我发个个个 </p>
-				<p>等我哈维发放蒛阿法骨个我hi哈凤凰网哈哈我服刚发古瓦富贵勿发噶我无法安慰法规挖废物狗服务噶法安慰辜负我干分哇福娃各个额沟通而且 去千万富翁我发发啊发爱妃我发个个个 </p>
-				<p>等我哈维发放蒛阿法骨个我hi哈凤凰网哈哈我服刚发古瓦富贵勿发噶我无法安慰法规挖废物狗服务噶法安慰辜负我干分哇福娃各个额沟通而且 去千万富翁我发发啊发爱妃我发个个个 </p>
-				<p>等我哈维发放蒛阿法骨个我hi哈凤凰网哈哈我服刚发古瓦富贵勿发噶我无法安慰法规挖废物狗服务噶法安慰辜负我干分哇福娃各个额沟通而且 去千万富翁我发发啊发爱妃我发个个个 </p>
-				<p>等我哈维发放蒛阿法骨个我hi哈凤凰网哈哈我服刚发古瓦富贵勿发噶我无法安慰法规挖废物狗服务噶法安慰辜负我干分哇福娃各个额沟通而且 去千万富翁我发发啊发爱妃我发个个个 </p>
-				<p>等我哈维发放蒛阿法骨个我hi哈凤凰网哈哈我服刚发古瓦富贵勿发噶我无法安慰法规挖废物狗服务噶法安慰辜负我干分哇福娃各个额沟通而且 去千万富翁我发发啊发爱妃我发个个个 </p>
-			</div>
+			<div id="fiction_container" class="m-read-content"></div>
 			<div class="top-nav" id="top-nav" style="display: none"><!--顶部导航部分开始，用于返回书架-->
 				<div class="top-nav-warp">
 					<div class="icon-back"></div>
@@ -529,7 +519,7 @@
 					</div>
 				</div>
 			</div><!--背景与字体部分结束-->
-			<div class="m-button-bar" id="bottom_tool_bar" style="display:none;padding-bottom:70px;">
+			<div class="m-button-bar" id="bottom_tool_bar" style="padding-bottom:70px;">
 				<ul class="u-tab" id="bottom_tool_bar_ul">
 					<li id="prev_button" >
 						上一章
@@ -603,7 +593,21 @@
 					var StorageSetter = function(key,val){
 						return localStorage.setItem(prefix + key,val);
 					}
+					var getBSONP = function(url,callback){
+						return $.jsonp({
+							url : url,
+							cache:true,
+							callback:'duokan_fiction_chapter',
+							success:function(result){
+								var data = $.base64.decode(result);
+								var json = decodeURIComponent(escape(data));
+								callback(json);
+							}
+						})
+					}
+
 					return {
+						getBSONP : getBSONP,
 						StorageGetter:StorageGetter,
 						StorageSetter:StorageSetter
 					}
@@ -616,12 +620,12 @@
 					font_button:$('#font-button'),
 					body:$('body')
 				}
-
+				var readerUI;
+				var readerModel;
 				var Win = $(window);
 				var Doc = $(document);
 				var RootContainer = $('#fiction_container');
 				var Night = Util.StorageGetter('Night');
-				console.log(Night);
 				var initBackGround = Util.StorageGetter('background');
 				var initFontSize = Util.StorageGetter('font-size');
 				//取到的值是个字符串，所以要转换为整数
@@ -649,15 +653,92 @@
 
 				function main(){
 					//整个项目的入口函数
+					readerModel = ReaderModel();
+					readerUI = ReaderBaseFrame(RootContainer);
+					readerModel.init(function(data){
+						readerUI(data);
+					});
+
 					EventHanlder();
 				}
 
 				function ReaderModel(){
 					//实现和阅读器相关的数据
+					var Chapter_id;
+					var ChapterTotal;
+					var init = function(UIcallback){
+						getFictionInfo(function(){
+							getCurChapterContent(Chapter_id,function(data){
+								//TODO...
+								UIcallback && UIcallback(data);
+							});
+						})
+					}
+					var getFictionInfo = function(callback){
+						$.get('data/chapter.json',function(data){
+							//获得章节信息之后的回调
+							Chapter_id = Util.StorageGetter('last_chapter_id');
+							if(Chapter_id == null){
+									Chapter_id = data.chapters[1].chapter_id;
+							}
+						
+							ChapterTotal = data.chapters.length;
+							callback && callback();
+						},'json');
+					}
+					var getCurChapterContent = function(chapter_id,callback){
+						$.get('data/data' + chapter_id + '.json',function(data){
+							if(data.result == 0){
+								var url = data.jsonp;
+								Util.getBSONP(url,function(data){
+									callback && callback(data);
+								});
+							}
+						},'json')
+					}
+
+					var prevChapter = function(UIcallback){
+						Chapter_id = parseInt(Chapter_id,10);
+						if(Chapter_id == 0){
+							return;
+						}
+						Chapter_id -= 1;
+						getCurChapterContent(Chapter_id,UIcallback);
+						Util.StorageSetter('last_chapter_id',Chapter_id);
+					}
+
+					var nextChapter = function(UIcallback){
+						Chapter_id = parseInt(Chapter_id,10);
+						if(Chapter_id == ChapterTotal){
+							return;
+						}
+						Chapter_id += 1;
+						getCurChapterContent(Chapter_id,UIcallback);
+						Util.StorageSetter('last_chapter_id',Chapter_id);
+					}
+
+					return {
+						init : init,
+						prevChapter : prevChapter,
+						nextChapter: nextChapter
+					}
 				}
 
-				function ReaderBaseFrame(){
+				function ReaderBaseFrame(container){
 					//渲染基本的UI结构
+					function parseChapterData(jsonData) {
+						var jsonObj = JSON.parse(jsonData);
+						var html = "<h4>" + jsonObj.t + "</h4>";
+						for (var i = 0; i < jsonObj.p.length; i++) {
+							html += "<p>" + jsonObj.p[i] + "</p>";
+						}
+						return html;
+					}
+
+					return function(data) {
+						container.html(parseChapterData(data));
+					};
+					
 				}
 
 				function EventHanlder(){
@@ -764,6 +845,20 @@
 						Dom.font_container.hide();
 						Dom.font_button.removeClass('current');
 					});
+
+					$('#prev_button').click(function(){
+						//获得章节的翻页数据-》把数据拿出来渲染
+						readerModel.prevChapter(function(data){
+							readerUI(data);
+						});
+					});
+					$('#next_button').click(function(){
+						//获得章节的翻页数据-》把数据拿出来渲染
+						readerModel.nextChapter(function(data){
+							readerUI(data);
+						});
+					});
+
 				}
 
 
